@@ -1,0 +1,62 @@
+#!/usr/bin/env ruby
+
+require "yaml"
+require "dotenv/load"
+
+$LOAD_PATH.unshift(File.join(File.dirname(__FILE__), '..', 'lib'))
+
+require_relative "../ext/hash"
+require "confluence_interface"
+require "confluence_interface/page"
+require "confluence_interface/page_context"
+require "github/repository"
+
+CONFIG_FILE = ENV.fetch("CONFIG_FILE", "config.yml")
+
+config = YAML.load(File.read(CONFIG_FILE))
+repo = Github::Repository.new
+
+has_markdown_links = []
+has_image_tag = []
+
+config["data"].each do |space, file_list|
+  context = Confluence::PageContext.new(space: space)
+
+  file_list.deep_traverse do |parent, filename|
+    path = [parent, filename].compact.join("/")
+    display_path = Confluence::Page.santize_title_for_display(path)
+
+    if context.page?(display_path)
+      puts "Page already exists, skipping: #{display_path}"
+      next
+    end
+
+    html = repo.content_for(filename)
+
+    has_markdown_links << display_path if html =~ /\[\[[^\[\]]*\]\]/i
+    has_image_tag << display_path if html =~ /<img/i
+
+    Confluence::Page.new(page: path, content: html, context: context).create!
+  end
+end
+
+
+(has_markdown_links + has_image_tag).uniq.tap do |paths|
+  next if paths.empty?
+
+  msg = <<-MSG
+
+  ================================================================================
+
+  The following confluence pages were just created and contain references to a
+  markdown link (e.g. `[[some linked page]]`) or an image.
+
+  This script cannot handle programmatically updating those links, so you may want
+  to manually update them as needed:
+
+  MSG
+
+  paths.each { |p| msg += "  - #{p}\n" }
+
+  puts "\e[33m#{msg}\e[0m"
+end
