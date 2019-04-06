@@ -3,7 +3,7 @@
 Blindly mass copies the contents of a Github repository Wiki to a Confluence Space.
 
 <p>
-  <img src="meta/screenshot.png" height="225" />
+  <img src="meta/screenshot.png" height="300" />
 </p>
 
 ### Notes
