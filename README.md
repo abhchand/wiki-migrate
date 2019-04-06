@@ -2,6 +2,10 @@
 
 Blindly mass copies the contents of a Github repository Wiki to a Confluence Space.
 
+<p>
+  <img src="meta/screenshot.png" height="225" />
+</p>
+
 ### Notes
 
 * A `.yml` config file specifies what pages are copied over and how they are organized
